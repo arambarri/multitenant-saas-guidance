@@ -5,9 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Authentication.JwtBearer;
-using Microsoft.AspNet.Authorization;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Tailspin.Surveys.Data.DataModels;
 using Tailspin.Surveys.Data.DataStore;
 using Tailspin.Surveys.Data.DTOs;
@@ -37,20 +37,20 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         /// This method returns a <see cref="Survey"/> if one is found with a matching id property. 
         /// </summary>
         /// <param name="id">The id of the <see cref="Survey"/></param>
-        /// <returns>An <see cref="ObjectResult"/> that contains a <see cref="SurveyDTO"/> if found, otherwise a <see cref="HttpNotFoundResult"/></returns>
+        /// <returns>An <see cref="ObjectResult"/> that contains a <see cref="SurveyDTO"/> if found, otherwise a <see cref="NotFoundResult"/></returns>
         [HttpGet("surveys/{id:int}", Name = "GetSurvey")]
         public async Task<IActionResult> Get(int id)
         {
             var survey = await _surveyStore.GetSurveyAsync(id);
             if (survey == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
 
             // The AuthorizationService uses the policies in the Tailspin.Surveys.Security project
             if (!await _authorizationService.AuthorizeAsync(User, survey, Operations.Read))
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
             return new ObjectResult(DataMapping._surveyToDto(survey));
         }
@@ -65,7 +65,7 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         {
             if (User.GetSurveyUserIdValue() != userId)
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             var surveys = new UserSurveysDTO();
@@ -86,7 +86,7 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         {
             if (User.GetSurveyTenantIdValue() != tenantId)
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             var surveys = new TenantSurveysDTO();
@@ -118,13 +118,13 @@ namespace Tailspin.Surveys.WebAPI.Controllers
             var survey = await _surveyStore.GetSurveyAsync(id);
             if (survey == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
 
             // Validate that the current user has Read permissions to this survey.
             if (!await _authorizationService.AuthorizeAsync(User, survey, Operations.Read))
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             return new ObjectResult(new ContributorsDTO()
@@ -147,11 +147,11 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         {
             if (item == null)
             {
-                return HttpBadRequest();
+                return BadRequest();
             }
             if (!ModelState.IsValid)
             {
-                return HttpBadRequest(ModelState);
+                return BadRequest(ModelState);
             }
 
             var survey = DataMapping._dtoToSurvey(item);
@@ -176,23 +176,23 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         {
             if (item == null || item.Id != id)
             {
-                return HttpBadRequest();
+                return BadRequest();
             }
             if (!ModelState.IsValid)
             {
-                return HttpBadRequest(ModelState);
+                return BadRequest(ModelState);
             }
 
             var survey = await _surveyStore.GetSurveyAsync(id);
             if (survey == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
 
             // Validate that the current user has Update permissions to this survey.
             if (!await _authorizationService.AuthorizeAsync(User, survey, Operations.Update))
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             // Apply update
@@ -207,20 +207,20 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         /// This method deletes the <see cref="Survey"/> with the specified id value.
         /// </summary>
         /// <param name="id">The id of the <see cref="Survey"/></param>
-        /// <returns>An <see cref="ObjectResult"/> that contains the deleted <see cref="Survey"/> if deletion is successful or a <see cref="HttpNotFoundResult"/> if the <see cref="Survey"/> is not found</returns>
+        /// <returns>An <see cref="ObjectResult"/> that contains the deleted <see cref="Survey"/> if deletion is successful or a <see cref="NotFoundResult"/> if the <see cref="Survey"/> is not found</returns>
         [HttpDelete("surveys/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             var survey = await _surveyStore.GetSurveyAsync(id);
             if (survey == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
 
             // Validate that the current user has Delete permissions to this survey.
             if (!await _authorizationService.AuthorizeAsync(User, survey, Operations.Delete))
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             await _surveyStore.DeleteSurveyAsync(survey);
@@ -239,23 +239,23 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         {
             if (item == null)
             {
-                return HttpBadRequest();
+                return BadRequest();
             }
             if (!ModelState.IsValid)
             {
-                return HttpBadRequest(ModelState);
+                return BadRequest(ModelState);
             }
 
             var survey = await _surveyStore.GetSurveyAsync(item.SurveyId);
             if (survey == null)
             {
-                return HttpBadRequest();
+                return BadRequest();
             }
 
             // Validate that the current user has Update permissions to this survey.
             if (!await _authorizationService.AuthorizeAsync(User, survey, Operations.Update))
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             await _contributorRequestStore.AddRequestAsync(item);
@@ -298,20 +298,20 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         /// This method publishes the <see cref="Survey"/> with the matching id.
         /// </summary>
         /// <param name="id">The id of the <see cref="Survey"/></param>
-        /// <returns>An <see cref="ObjectResult"/> that contains a <see cref="SurveyDTO"/> of a published <see cref="Survey"/>, or a <see cref="HttpNotFoundResult"/> if the <see cref="Survey"/> is not found</returns>
+        /// <returns>An <see cref="ObjectResult"/> that contains a <see cref="SurveyDTO"/> of a published <see cref="Survey"/>, or a <see cref="NotFoundResult"/> if the <see cref="Survey"/> is not found</returns>
         [HttpPut("surveys/{id}/publish")]
         public async Task<IActionResult> Publish(int id)
         {
             var survey = await _surveyStore.GetSurveyAsync(id);
             if (survey == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
 
             // Validate that the current user has Publish permissions to this survey.
             if (!await _authorizationService.AuthorizeAsync(User, survey, Operations.Publish))
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             var published = await _surveyStore.PublishSurveyAsync(id);
@@ -323,20 +323,20 @@ namespace Tailspin.Surveys.WebAPI.Controllers
         /// This method unpublishes the <see cref="Survey"/> with the matching id.
         /// </summary>
         /// <param name="id">The id of the <see cref="Survey"/></param>
-        /// <returns>An <see cref="ObjectResult"/> that contains a <see cref="SurveyDTO"/> of an unpublished <see cref="Survey"/>, or a <see cref="HttpNotFoundResult"/> if the <see cref="Survey"/> is not found</returns>
+        /// <returns>An <see cref="ObjectResult"/> that contains a <see cref="SurveyDTO"/> of an unpublished <see cref="Survey"/>, or a <see cref="NotFoundResult"/> if the <see cref="Survey"/> is not found</returns>
         [HttpPut("surveys/{id}/unpublish")]
         public async Task<IActionResult> UnPublish(int id)
         {
             var survey = await _surveyStore.GetSurveyAsync(id);
             if (survey == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
 
             // Validate that the current user has UnPublish permissions to this survey.
             if (!await _authorizationService.AuthorizeAsync(User, survey, Operations.UnPublish))
             {
-                return new HttpStatusCodeResult((int)HttpStatusCode.Forbidden);
+                return new StatusCodeResult((int)HttpStatusCode.Forbidden);
             }
 
             var unpublished = await _surveyStore.UnPublishSurveyAsync(id);
